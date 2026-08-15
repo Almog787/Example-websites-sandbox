@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { ChevronLeft, CheckCircle2 } from 'lucide-react';
+import { formatDateISO } from './utils/dateUtils';
 
 const servicesList = [
   { id: '1', title: 'תספורת קלאסית', price: '₪120', duration: '45 דקות' },
@@ -45,7 +46,7 @@ export default function MinimalBooking({ appointments, onAddAppointment, onNavig
     e.preventDefault();
     onAddAppointment({
       ...bookingData,
-      date: new Date(bookingData.date.getTime() - bookingData.date.getTimezoneOffset() * 60000).toISOString().split('T')[0],
+      date: formatDateISO(bookingData.date),
       status: 'pending'
     });
     setStep(4);
@@ -53,7 +54,7 @@ export default function MinimalBooking({ appointments, onAddAppointment, onNavig
 
   const getAvailableTimes = () => {
     if (!bookingData.date) return [];
-    const dateStr = new Date(bookingData.date.getTime() - bookingData.date.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+    const dateStr = formatDateISO(bookingData.date);
     const taken = appointments.filter((a: any) => a.date === dateStr).map((a: any) => a.time);
     return ALL_TIMES.filter(t => !taken.includes(t));
   };
@@ -130,7 +131,7 @@ export default function MinimalBooking({ appointments, onAddAppointment, onNavig
                   {dates.map((d, idx) => (
                     <button
                       key={idx}
-                      onClick={() => setBookingData({ ...bookingData, date: d.date })}
+                      onClick={() => setBookingData({ ...bookingData, date: d.date, time: '' })}
                       className={`snap-center flex-shrink-0 w-24 h-32 rounded-2xl border flex flex-col items-center justify-center gap-2 transition-all ${
                         bookingData.date === d.date 
                           ? 'border-secondary bg-secondary/15 text-secondary-dark font-bold shadow-md scale-105' 

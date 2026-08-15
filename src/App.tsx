@@ -6,6 +6,7 @@ import MinimalBooking from './MinimalBooking';
 import AdminPage from './AdminPage';
 import WeeklyCalendar from './WeeklyCalendar';
 import CapabilitiesPage from './CapabilitiesPage';
+import { formatDateISO } from './utils/dateUtils';
 
 export interface Appointment {
   id: string;
@@ -71,7 +72,7 @@ const getMockData = (): Appointment[] => {
       name: names[i],
       phone: `050-123456${i}`,
       service: services[i % services.length],
-      date: new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0],
+      date: formatDateISO(d),
       time: times[i],
       status: i < 2 ? 'completed' : (i < 5 ? 'confirmed' : 'pending')
     });

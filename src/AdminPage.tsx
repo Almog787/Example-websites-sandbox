@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { Appointment, services } from './App';
 import WeeklyCalendar from './WeeklyCalendar';
+import { formatDateISO } from './utils/dateUtils';
 
 interface AdminPageProps {
   appointments: Appointment[];
@@ -40,7 +41,7 @@ export default function AdminPage({ appointments, setAppointments }: AdminPagePr
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   
   // Form State for Manual Appointment
-  const todayStr = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
+  const todayStr = formatDateISO();
   const [newApt, setNewApt] = useState({
     name: '',
     phone: '',
@@ -105,6 +106,12 @@ export default function AdminPage({ appointments, setAppointments }: AdminPagePr
 
   const handleAddAppointment = (e: React.FormEvent) => {
     e.preventDefault();
+    const isAlreadyTaken = appointments.some(a => a.date === newApt.date && a.time === newApt.time);
+    if (isAlreadyTaken) {
+      if (!confirm(`שים לב: כבר קיים תור בתאריך ${newApt.date.split('-').reverse().join('/')} בשעה ${newApt.time}. האם לשריין תור נוסף בשעה זו?`)) {
+        return;
+      }
+    }
     const created: Appointment = {
       id: `manual-${Date.now()}`,
       name: newApt.name,
@@ -139,7 +146,9 @@ export default function AdminPage({ appointments, setAppointments }: AdminPagePr
                           app.phone.includes(searchQuery) ||
                           getServiceName(app.service).toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = filterStatus === 'all' || app.status === filterStatus;
-    const matchesService = filterService === 'all' || app.service === filterService;
+    const appServiceObj = services.find(s => s.id === app.service || s.title === app.service);
+    const appServiceId = appServiceObj ? appServiceObj.id : app.service;
+    const matchesService = filterService === 'all' || appServiceId === filterService || app.service === filterService;
     return matchesSearch && matchesStatus && matchesService;
   });
 

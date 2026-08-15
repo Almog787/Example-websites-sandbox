@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronRight } from 'lucide-react';
 import { Appointment, services } from './App';
+import { formatDateISO, isSlotInPast } from './utils/dateUtils';
 
 const HOURS = [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
 const WEEK_DAYS = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי'];
@@ -22,9 +23,10 @@ export default function WeeklyCalendar({
 }: WeeklyCalendarProps) {
   const [currentWeekStart, setCurrentWeekStart] = useState<Date>(() => {
     const d = new Date();
+    d.setHours(0, 0, 0, 0);
     const day = d.getDay(); // 0 is Sunday
-    const diff = d.getDate() - day;
-    return new Date(d.setDate(diff));
+    d.setDate(d.getDate() - day);
+    return d;
   });
 
   const [mobileSelectedDate, setMobileSelectedDate] = useState<string>('');
@@ -44,13 +46,13 @@ export default function WeeklyCalendar({
   const weekDates = WEEK_DAYS.map((name, i) => {
     const d = new Date(currentWeekStart);
     d.setDate(currentWeekStart.getDate() + i);
-    const dateStr = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0];
+    const dateStr = formatDateISO(d);
     return { name, dateStr, dayObj: d };
   });
 
   // Set initial mobile selected date or update when week changes
   useEffect(() => {
-    const todayStr = new Date(new Date().getTime() - new Date().getTimezoneOffset() * 60000).toISOString().split('T')[0];
+    const todayStr = formatDateISO();
     const isTodayInWeek = weekDates.some(d => d.dateStr === todayStr);
     if (isTodayInWeek) {
       setMobileSelectedDate(todayStr);
@@ -105,10 +107,7 @@ export default function WeeklyCalendar({
                 const slotApps = getAppointmentsForSlot(day.dateStr, hour);
                 const isBooked = slotApps.length > 0;
                 const isSelected = selectedDate === day.dateStr && selectedTime === `${hour.toString().padStart(2, '0')}:00`;
-                
-                const slotDate = new Date(day.dateStr);
-                slotDate.setHours(hour, 0, 0, 0);
-                const isPast = slotDate < new Date();
+                const isPast = isSlotInPast(day.dateStr, hour);
 
                 if (mode === 'admin') {
                   return (
@@ -136,7 +135,7 @@ export default function WeeklyCalendar({
                           >
                             <div className="font-bold truncate">{app.name}</div>
                             <div className="text-[10px] opacity-90 truncate">
-                              {services.find(s=>s.id===app.service)?.title || app.service} | {app.time}
+                              {services.find(s => s.id === app.service || s.title === app.service)?.title || app.service} | {app.time}
                             </div>
                           </div>
                         ))
@@ -191,10 +190,7 @@ export default function WeeklyCalendar({
             const isBooked = slotApps.length > 0;
             const timeStr = `${hour.toString().padStart(2, '0')}:00`;
             const isSelected = selectedDate === mobileSelectedDate && selectedTime === timeStr;
-            
-            const slotDate = new Date(mobileSelectedDate);
-            slotDate.setHours(hour, 0, 0, 0);
-            const isPast = slotDate < new Date();
+            const isPast = isSlotInPast(mobileSelectedDate, hour);
 
             if (mode === 'admin') {
               return (
@@ -225,7 +221,7 @@ export default function WeeklyCalendar({
                       >
                         <div className="font-bold mb-1 text-base">{app.name}</div>
                         <div className="flex items-center justify-between opacity-90 text-xs">
-                          <span>{services.find(s=>s.id===app.service)?.title || app.service}</span>
+                          <span>{services.find(s => s.id === app.service || s.title === app.service)?.title || app.service}</span>
                           <span className="dir-ltr">{app.phone}</span>
                         </div>
                       </div>

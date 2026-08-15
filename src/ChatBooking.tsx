@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Send, User, Calendar, Clock, Scissors, Phone, CheckCircle2, Bot } from 'lucide-react';
+import { formatDateISO } from './utils/dateUtils';
 
 interface ChatMessage {
   id: string;
@@ -21,7 +22,7 @@ export default function ChatBooking({ appointments, onAddAppointment, onNavigate
       d.setDate(d.getDate() + i); // Starting from today
       return {
         label: d.toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'short' }),
-        value: new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split('T')[0]
+        value: formatDateISO(d)
       };
     });
   };
@@ -38,10 +39,15 @@ export default function ChatBooking({ appointments, onAddAppointment, onNavigate
   ]);
   const [inputValue, setInputValue] = useState('');
   const [bookingData, setBookingData] = useState<any>({});
-  const bottomRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTo({
+        top: scrollContainerRef.current.scrollHeight,
+        behavior: 'smooth'
+      });
+    }
   }, [messages]);
 
   const handleOptionClick = (optionLabel: string, type?: string) => {
@@ -100,46 +106,101 @@ export default function ChatBooking({ appointments, onAddAppointment, onNavigate
   };
 
   const handleSendText = () => {
-    if (!inputValue.trim()) return;
+    const text = inputValue.trim();
+    if (!text) return;
     
     const lastBotMessage = messages.slice().reverse().find(m => m.sender === 'bot');
     const type = lastBotMessage?.type;
 
-    setMessages(prev => [...prev, { id: Date.now().toString(), sender: 'user', text: inputValue }]);
+    setMessages(prev => [...prev, { id: Date.now().toString(), sender: 'user', text }]);
+    setInputValue('');
     
     setTimeout(() => {
-      if (type === 'name') {
-        setBookingData((prev: any) => ({ ...prev, name: inputValue }));
-        setMessages(prev => [...prev, {
+      let nextMsg: ChatMessage;
+
+      if (type === 'service') {
+        const matchedService = services.find(s => s.toLowerCase().includes(text.toLowerCase())) || text;
+        setBookingData((prev: any) => ({ ...prev, service: matchedService }));
+        nextMsg = {
           id: Date.now().toString(),
           sender: 'bot',
-          text: `נעים מאוד ${inputValue}! מה מספר הטלפון שלכם לחזרה ותזכורת?`,
+          text: `מעולה, ${matchedService} זו בחירה מצוינת! באיזה תאריך תרצו להגיע?`,
+          options: dateOptions.map(d => d.label),
+          type: 'date'
+        };
+      } else if (type === 'date') {
+        const matchedDateObj = dateOptions.find(d => d.label.includes(text) || d.value.includes(text));
+        const selectedDate = matchedDateObj ? matchedDateObj.value : dateOptions[0].value;
+        setBookingData((prev: any) => ({ ...prev, date: selectedDate }));
+
+        const taken = appointments.filter(a => a.date === selectedDate).map(a => a.time);
+        const freeTimes = ALL_TIMES.filter(t => !taken.includes(t));
+
+        if (freeTimes.length > 0) {
+          nextMsg = {
+            id: Date.now().toString(),
+            sender: 'bot',
+            text: `מצוין. אלו השעות הפנויות לתאריך ${selectedDate.split('-').reverse().join('/')}. מתי נוח לכם?`,
+            options: freeTimes,
+            type: 'time'
+          };
+        } else {
+          nextMsg = {
+            id: Date.now().toString(),
+            sender: 'bot',
+            text: `נראה שאין שעות פנויות ביום הזה. אנא בחרו תאריך אחר:`,
+            options: dateOptions.map(d => d.label),
+            type: 'date'
+          };
+        }
+      } else if (type === 'time') {
+        const matchedTime = ALL_TIMES.find(t => t.includes(text)) || text;
+        setBookingData((prev: any) => ({ ...prev, time: matchedTime }));
+        nextMsg = {
+          id: Date.now().toString(),
+          sender: 'bot',
+          text: `מעולה. כדי שאוכל לרשום את התור, מה השם המלא שלכם?`,
+          type: 'name'
+        };
+      } else if (type === 'name') {
+        setBookingData((prev: any) => ({ ...prev, name: text }));
+        nextMsg = {
+          id: Date.now().toString(),
+          sender: 'bot',
+          text: `נעים מאוד ${text}! מה מספר הטלפון שלכם לחזרה ותזכורת?`,
           type: 'phone'
-        }]);
+        };
       } else if (type === 'phone') {
         setBookingData((prev: any) => {
-          const newData = { ...prev, phone: inputValue };
+          const newData = { ...prev, phone: text };
           onAddAppointment({
             name: newData.name,
             phone: newData.phone,
-            service: newData.service,
-            date: newData.date,
-            time: newData.time,
+            service: newData.service || services[0],
+            date: newData.date || dateOptions[0].value,
+            time: newData.time || '12:00',
             status: 'pending'
           });
           return newData;
         });
         
-        setMessages(prev => [...prev, {
+        nextMsg = {
           id: Date.now().toString(),
           sender: 'bot',
-          text: `תודה רבה! התור נקבע בהצלחה. נשלח אליכם הודעת תזכורת יום לפני. נתראה! ✨`,
+          text: `תודה רבה ${text}! התור נקבע בהצלחה ומסונכרן כעת לכל המערכות. נתראה! ✨`,
           type: 'confirm'
-        }]);
+        };
+      } else {
+        nextMsg = {
+          id: Date.now().toString(),
+          sender: 'bot',
+          text: `התור כבר נרשם! לחץ על כפתור ההזמנות או פנה לאזור המנהל כדי לצפות בו.`,
+          type: 'confirm'
+        };
       }
-    }, 800);
-    
-    setInputValue('');
+
+      setMessages(prev => [...prev, nextMsg]);
+    }, 600);
   };
 
   return (
@@ -167,7 +228,7 @@ export default function ChatBooking({ appointments, onAddAppointment, onNavigate
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-4 md:p-6 flex flex-col gap-6 custom-scrollbar bg-surface-container/30">
+        <div ref={scrollContainerRef} className="flex-1 overflow-y-auto p-4 md:p-6 flex flex-col gap-6 custom-scrollbar bg-surface-container/30">
           <AnimatePresence>
             {messages.map((msg) => (
               <motion.div
@@ -206,7 +267,6 @@ export default function ChatBooking({ appointments, onAddAppointment, onNavigate
               </motion.div>
             ))}
           </AnimatePresence>
-          <div ref={bottomRef} />
         </div>
 
         <div className="p-4 bg-surface-container-low border-t border-outline-variant/40">
