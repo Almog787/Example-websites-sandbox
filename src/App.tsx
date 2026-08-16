@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence, useScroll, useSpring, useTransform } from 'motion/react';
-import { Calendar, Clock, Scissors, Phone, User, CheckCircle2, ChevronRight, Menu, X, Briefcase, Settings, Star, ArrowLeft, Sparkles, Layers } from 'lucide-react';
+import { Calendar, Clock, Scissors, Phone, User, CheckCircle2, ChevronRight, Menu, X, Star, ArrowLeft, Sparkles } from 'lucide-react';
 import ChatBooking from './ChatBooking';
 import MinimalBooking from './MinimalBooking';
 import AdminPage from './AdminPage';

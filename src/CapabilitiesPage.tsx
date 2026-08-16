@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Sparkles, 
-  Smartphone, 
   MessageSquare, 
   CreditCard, 
   BellRing, 
@@ -14,20 +13,13 @@ import {
   CalendarSync, 
   FolderHeart, 
   CheckCircle2, 
-  ChevronRight, 
   ArrowLeft, 
   Zap, 
-  ShieldCheck, 
   Check, 
-  X, 
   DollarSign, 
   Layers, 
   Cpu, 
-  MousePointerClick,
-  Send,
-  Star,
-  Clock,
-  Scissors
+  MousePointerClick
 } from 'lucide-react';
 
 interface CapabilitiesPageProps {

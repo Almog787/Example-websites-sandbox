@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
-  Briefcase, 
   Calendar as CalendarIcon, 
   Plus, 
   Trash2, 
@@ -9,17 +8,13 @@ import {
   CheckCircle2, 
   Clock, 
   Phone, 
-  User, 
   Scissors, 
-  Filter, 
   Search, 
-  RefreshCw, 
   MessageSquare, 
   CalendarDays, 
   ListFilter, 
   Sparkles,
-  TrendingUp,
-  DollarSign
+  TrendingUp
 } from 'lucide-react';
 import { Appointment, services } from './App';
 import WeeklyCalendar from './WeeklyCalendar';
@@ -34,11 +29,9 @@ export default function AdminPage({ appointments, setAppointments }: AdminPagePr
   const [viewMode, setViewMode] = useState<'calendar' | 'list' | 'today'>('today');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterStatus, setFilterStatus] = useState<'all' | 'pending' | 'confirmed' | 'completed'>('all');
-  const [filterService, setFilterService] = useState<string>('all');
   
-  // Modal State for Quick Add / Edit / Details
+  // Modal State for Quick Add
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   
   // Form State for Manual Appointment
   const todayStr = formatDateISO();
@@ -90,17 +83,11 @@ export default function AdminPage({ appointments, setAppointments }: AdminPagePr
   // Actions
   const updateStatus = (id: string, newStatus: 'pending' | 'confirmed' | 'completed') => {
     setAppointments(prev => prev.map(a => a.id === id ? { ...a, status: newStatus } : a));
-    if (selectedAppointment && selectedAppointment.id === id) {
-      setSelectedAppointment(prev => prev ? { ...prev, status: newStatus } : null);
-    }
   };
 
   const deleteAppointment = (id: string) => {
     if (confirm('האם אתה בטוח שברצונך למחוק/לבטל תור זה?')) {
       setAppointments(prev => prev.filter(a => a.id !== id));
-      if (selectedAppointment?.id === id) {
-        setSelectedAppointment(null);
-      }
     }
   };
 
@@ -146,10 +133,7 @@ export default function AdminPage({ appointments, setAppointments }: AdminPagePr
                           app.phone.includes(searchQuery) ||
                           getServiceName(app.service).toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = filterStatus === 'all' || app.status === filterStatus;
-    const appServiceObj = services.find(s => s.id === app.service || s.title === app.service);
-    const appServiceId = appServiceObj ? appServiceObj.id : app.service;
-    const matchesService = filterService === 'all' || appServiceId === filterService || app.service === filterService;
-    return matchesSearch && matchesStatus && matchesService;
+    return matchesSearch && matchesStatus;
   });
 
   const sortedAppointments = [...filteredAppointments].sort((a, b) => {

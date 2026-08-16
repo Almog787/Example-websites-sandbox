@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Send, User, Calendar, Clock, Scissors, Phone, CheckCircle2, Bot } from 'lucide-react';
+import { Send, Bot } from 'lucide-react';
 import { formatDateISO } from './utils/dateUtils';
 
 interface ChatMessage {

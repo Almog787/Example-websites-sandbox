@@ -1,6 +1,6 @@
 {
   "name": "Barbershop Appointments",
-  "description": "Barbershop queue management system with AI Assistant.",
+  "description": "Lumière Boutique - Barbershop queue management platform and interactive showcase.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
