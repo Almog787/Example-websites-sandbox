@@ -118,7 +118,7 @@ export default function WeeklyCalendar({
                       style={{ gridRow: hIdx + 2, gridColumn: dIdx + 2 }}
                     >
                       {slotApps.length === 0 ? (
-                        <div className="w-full h-full flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity text-[10px] text-secondary font-bold">
+                        <div className="w-full h-full flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity text-[10px] text-secondary-dark font-bold">
                           + הוסף תור
                         </div>
                       ) : (

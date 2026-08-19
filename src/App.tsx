@@ -142,13 +142,13 @@ export default function App() {
           
           {/* Desktop Nav */}
           <nav className="hidden md:flex items-center gap-7">
-            <button onClick={() => navigate('home')} className={`text-sm uppercase tracking-widest transition-colors font-medium gold-underline ${activePage === 'home' ? 'text-secondary active' : 'text-on-surface-variant hover:text-secondary'}`}>ראשי</button>
-            <button onClick={() => navigate('services')} className={`text-sm uppercase tracking-widest transition-colors font-medium gold-underline ${activePage === 'services' ? 'text-secondary active' : 'text-on-surface-variant hover:text-secondary'}`}>שירותים</button>
-            <button onClick={() => navigate('capabilities')} className={`text-sm uppercase tracking-widest transition-colors font-bold gold-underline flex items-center gap-1.5 px-3 py-1 rounded-full border transition-all ${activePage === 'capabilities' ? 'bg-secondary/15 border-secondary text-secondary shadow-[0_0_15px_rgba(212,175,55,0.25)]' : 'border-secondary/30 text-secondary hover:bg-secondary/10'}`}>
+            <button onClick={() => navigate('home')} className={`text-sm uppercase tracking-widest transition-colors font-medium gold-underline ${activePage === 'home' ? 'text-secondary-dark active' : 'text-on-surface-variant hover:text-secondary-dark'}`}>ראשי</button>
+            <button onClick={() => navigate('services')} className={`text-sm uppercase tracking-widest transition-colors font-medium gold-underline ${activePage === 'services' ? 'text-secondary-dark active' : 'text-on-surface-variant hover:text-secondary-dark'}`}>שירותים</button>
+            <button onClick={() => navigate('capabilities')} className={`text-sm uppercase tracking-widest transition-colors font-bold gold-underline flex items-center gap-1.5 px-3 py-1 rounded-full border transition-all ${activePage === 'capabilities' ? 'bg-secondary/15 border-secondary text-secondary-dark shadow-[0_0_15px_rgba(212,175,55,0.25)]' : 'border-secondary/30 text-secondary-dark hover:bg-secondary/10'}`}>
               <Sparkles className="w-3.5 h-3.5" />
               יכולות המערכת
             </button>
-            <button onClick={() => navigate('admin')} className={`text-sm uppercase tracking-widest transition-colors font-medium flex items-center gap-1 gold-underline ${activePage === 'admin' ? 'text-secondary active' : 'text-on-surface-variant hover:text-secondary'}`}>אזור מנהל</button>
+            <button onClick={() => navigate('admin')} className={`text-sm uppercase tracking-widest transition-colors font-medium flex items-center gap-1 gold-underline ${activePage === 'admin' ? 'text-secondary-dark active' : 'text-on-surface-variant hover:text-secondary-dark'}`}>אזור מנהל</button>
             
             <div 
               className="relative group"
@@ -164,7 +164,7 @@ export default function App() {
               
               <div className={`absolute top-full right-0 mt-2 w-72 bg-surface rounded-xl shadow-2xl border border-secondary/30 transition-all flex flex-col overflow-hidden z-50 origin-top ${isDemoMenuOpen ? 'opacity-100 visible scale-100' : 'opacity-0 invisible scale-95'}`}>
                 <div className="bg-secondary/10 px-4 py-2 border-b border-secondary/20">
-                  <span className="text-xs text-secondary font-bold uppercase tracking-widest">בחר סוג חוויה למשתמש:</span>
+                  <span className="text-xs text-secondary-dark font-bold uppercase tracking-widest">בחר סוג חוויה למשתמש:</span>
                 </div>
                 <button onClick={() => navigate('book')} className="px-4 py-3 text-right hover:bg-secondary hover:text-primary transition-colors border-b border-surface-variant text-on-surface font-medium flex justify-between items-center group/btn">
                   <span>תור רגיל (גריד קלאסי)</span>
@@ -178,7 +178,7 @@ export default function App() {
                   <span>עיצוב מינימליסטי (Apple)</span>
                   <ChevronRight className="w-4 h-4 opacity-0 group-hover/btn:opacity-100 -translate-x-2 group-hover/btn:translate-x-0 transition-all"/>
                 </button>
-                <button onClick={() => navigate('capabilities')} className="px-4 py-3 text-right bg-secondary/5 hover:bg-secondary hover:text-primary transition-colors text-secondary hover:text-primary font-bold flex justify-between items-center group/btn">
+                <button onClick={() => navigate('capabilities')} className="px-4 py-3 text-right bg-secondary/5 hover:bg-secondary hover:text-primary transition-colors text-secondary-dark hover:text-primary font-bold flex justify-between items-center group/btn">
                   <span className="flex items-center gap-1.5"><Sparkles className="w-3.5 h-3.5" /> מרכז יכולות והרחבות</span>
                   <ChevronRight className="w-4 h-4 opacity-0 group-hover/btn:opacity-100 -translate-x-2 group-hover/btn:translate-x-0 transition-all"/>
                 </button>
@@ -202,21 +202,21 @@ export default function App() {
               className="md:hidden bg-surface border-b border-surface-variant overflow-hidden"
             >
               <div className="flex flex-col px-6 py-4 gap-4">
-                <button onClick={() => navigate('home')} className="text-right text-sm uppercase tracking-widest text-on-surface hover:text-secondary transition-colors">ראשי</button>
-                <button onClick={() => navigate('services')} className="text-right text-sm uppercase tracking-widest text-on-surface hover:text-secondary transition-colors">שירותים</button>
-                <button onClick={() => navigate('capabilities')} className="text-right text-sm font-bold uppercase tracking-widest text-secondary flex items-center justify-between bg-secondary/10 p-2.5 rounded-lg border border-secondary/30">
+                <button onClick={() => navigate('home')} className="text-right text-sm uppercase tracking-widest text-on-surface hover:text-secondary-dark transition-colors">ראשי</button>
+                <button onClick={() => navigate('services')} className="text-right text-sm uppercase tracking-widest text-on-surface hover:text-secondary-dark transition-colors">שירותים</button>
+                <button onClick={() => navigate('capabilities')} className="text-right text-sm font-bold uppercase tracking-widest text-secondary-dark flex items-center justify-between bg-secondary/10 p-2.5 rounded-lg border border-secondary/30">
                   <span className="flex items-center gap-1.5"><Sparkles className="w-4 h-4" /> דף יכולות המערכת</span>
                   <ChevronRight className="w-4 h-4" />
                 </button>
                 
                 <div className="flex flex-col gap-2 mt-2 border-t border-surface-variant pt-2 bg-secondary/5 rounded-lg p-2">
-                  <span className="text-right text-xs text-secondary mb-1 uppercase tracking-widest font-bold">הדגמות (Showcase):</span>
+                  <span className="text-right text-xs text-secondary-dark mb-1 uppercase tracking-widest font-bold">הדגמות (Showcase):</span>
                   <button onClick={() => navigate('book')} className="text-right text-sm tracking-widest text-on-surface hover:bg-secondary hover:text-primary p-2 rounded transition-colors">תור רגיל (גריד)</button>
                   <button onClick={() => navigate('book-chat')} className="text-right text-sm tracking-widest text-on-surface hover:bg-secondary hover:text-primary p-2 rounded transition-colors">צ'אט-בוט אינטראקטיבי</button>
                   <button onClick={() => navigate('book-minimal')} className="text-right text-sm tracking-widest text-on-surface hover:bg-secondary hover:text-primary p-2 rounded transition-colors">עיצוב מינימליסטי</button>
                 </div>
 
-                <button onClick={() => navigate('admin')} className="text-right text-sm uppercase tracking-widest text-on-surface-variant border-t border-surface-variant mt-2 pt-4 hover:text-secondary transition-colors">אזור מנהל</button>
+                <button onClick={() => navigate('admin')} className="text-right text-sm uppercase tracking-widest text-on-surface-variant border-t border-surface-variant mt-2 pt-4 hover:text-secondary-dark transition-colors">אזור מנהל</button>
               </div>
             </motion.div>
           )}
@@ -274,15 +274,15 @@ export default function App() {
           </div>
           <div className="flex flex-col gap-3">
             <h4 className="font-bold text-xs uppercase tracking-widest text-secondary-dark mb-1">ניווט מהיר</h4>
-            <button onClick={() => navigate('home')} className="text-on-surface-variant text-xs hover:text-secondary text-right transition-colors">דף הבית</button>
-            <button onClick={() => navigate('capabilities')} className="text-on-surface-variant text-xs hover:text-secondary text-right transition-colors font-bold text-secondary-dark">דף יכולות המערכת</button>
-            <button onClick={() => navigate('admin')} className="text-on-surface-variant text-xs hover:text-secondary text-right transition-colors">אזור ניהול (Admin)</button>
+            <button onClick={() => navigate('home')} className="text-on-surface-variant text-xs hover:text-secondary-dark text-right transition-colors">דף הבית</button>
+            <button onClick={() => navigate('capabilities')} className="text-on-surface-variant text-xs hover:text-secondary-dark text-right transition-colors font-bold text-secondary-dark">דף יכולות המערכת</button>
+            <button onClick={() => navigate('admin')} className="text-on-surface-variant text-xs hover:text-secondary-dark text-right transition-colors">אזור ניהול (Admin)</button>
           </div>
           <div className="flex flex-col gap-3">
             <h4 className="font-bold text-xs uppercase tracking-widest text-secondary-dark mb-1">ממשקי הזמנה בדמו</h4>
-            <button onClick={() => navigate('book')} className="text-on-surface-variant text-xs hover:text-secondary text-right transition-colors">תור רגיל (גריד שבועי)</button>
-            <button onClick={() => navigate('book-chat')} className="text-on-surface-variant text-xs hover:text-secondary text-right transition-colors">צ'אט-בוט אינטראקטיבי</button>
-            <button onClick={() => navigate('book-minimal')} className="text-on-surface-variant text-xs hover:text-secondary text-right transition-colors">עיצוב מינימליסטי (Apple)</button>
+            <button onClick={() => navigate('book')} className="text-on-surface-variant text-xs hover:text-secondary-dark text-right transition-colors">תור רגיל (גריד שבועי)</button>
+            <button onClick={() => navigate('book-chat')} className="text-on-surface-variant text-xs hover:text-secondary-dark text-right transition-colors">צ'אט-בוט אינטראקטיבי</button>
+            <button onClick={() => navigate('book-minimal')} className="text-on-surface-variant text-xs hover:text-secondary-dark text-right transition-colors">עיצוב מינימליסטי (Apple)</button>
           </div>
           <div className="col-span-1 md:col-span-4 pt-6 border-t border-outline-variant text-center">
             <p className="text-xs text-on-surface-variant">© 2026 AutoFlow Systems. סביבת הדגמה פתוחה להמחשת פתרונות דיגיטליים.</p>
@@ -386,7 +386,7 @@ function HomePage({ onNavigate }: { onNavigate: (page: 'book' | 'services' | 'ca
                 whileHover={{ y: -10, scale: 1.02 }}
                 className="flex flex-col items-center text-center p-8 bg-surface-container-lowest rounded-2xl luxury-shadow group transition-shadow duration-500 hover:shadow-2xl"
               >
-                <div className="w-16 h-16 bg-primary/5 text-secondary rounded-full flex items-center justify-center mb-6 group-hover:bg-secondary group-hover:text-primary transition-colors duration-500">
+                <div className="w-16 h-16 bg-primary/5 text-secondary-dark rounded-full flex items-center justify-center mb-6 group-hover:bg-secondary group-hover:text-primary transition-colors duration-500">
                   <feature.icon className="w-8 h-8" />
                 </div>
                 <h3 className="font-serif text-2xl font-bold mb-4 text-primary">{feature.title}</h3>
@@ -398,7 +398,7 @@ function HomePage({ onNavigate }: { onNavigate: (page: 'book' | 'services' | 'ca
           {/* Capabilities Pitch Banner inside HomePage */}
           <div className="mt-16 bg-gradient-to-r from-surface-container-high via-secondary/10 to-surface-container-high rounded-3xl p-8 md:p-10 border border-secondary/30 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl">
             <div className="flex items-center gap-4 text-right">
-              <div className="w-14 h-14 rounded-2xl bg-secondary/15 text-secondary flex items-center justify-center flex-shrink-0 border border-secondary/30">
+              <div className="w-14 h-14 rounded-2xl bg-secondary/15 text-secondary-dark flex items-center justify-center flex-shrink-0 border border-secondary/30">
                 <Sparkles className="w-7 h-7" />
               </div>
               <div>
@@ -478,7 +478,7 @@ function ServicesPage({ onNavigate }: { onNavigate: (page: 'book') => void }) {
             <div className="p-8 flex flex-col flex-1">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="font-serif text-2xl text-primary font-bold">{srv.title}</h3>
-                <span className="text-sm text-secondary bg-secondary/10 px-3 py-1 rounded-full flex items-center gap-1 font-medium">
+                <span className="text-sm text-secondary-dark bg-secondary/10 px-3 py-1 rounded-full flex items-center gap-1 font-medium">
                   <Clock className="w-3 h-3" /> {srv.duration}
                 </span>
               </div>
@@ -601,7 +601,7 @@ function BookingPage({ appointments, setAppointments, onNavigate }: { appointmen
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             <div className="space-y-2">
               <label className="text-sm font-bold uppercase tracking-widest text-on-surface-variant flex items-center gap-2">
-                <User className="w-4 h-4 text-secondary" /> שם מלא
+                <User className="w-4 h-4 text-secondary-dark" /> שם מלא
               </label>
               <input 
                 required 
@@ -614,7 +614,7 @@ function BookingPage({ appointments, setAppointments, onNavigate }: { appointmen
             </div>
             <div className="space-y-2">
               <label className="text-sm font-bold uppercase tracking-widest text-on-surface-variant flex items-center gap-2">
-                <Phone className="w-4 h-4 text-secondary" /> טלפון נייד
+                <Phone className="w-4 h-4 text-secondary-dark" /> טלפון נייד
               </label>
               <input 
                 required 
@@ -630,7 +630,7 @@ function BookingPage({ appointments, setAppointments, onNavigate }: { appointmen
 
           <div className="space-y-2">
             <label className="text-sm font-bold uppercase tracking-widest text-on-surface-variant flex items-center gap-2">
-              <Scissors className="w-4 h-4 text-secondary" /> סוג שירות
+              <Scissors className="w-4 h-4 text-secondary-dark" /> סוג שירות
             </label>
             <select 
               className="w-full bg-surface border-b-2 border-outline-variant/50 px-4 py-3 focus:outline-none focus:border-secondary focus:bg-surface-container transition-all cursor-pointer"
@@ -643,7 +643,7 @@ function BookingPage({ appointments, setAppointments, onNavigate }: { appointmen
 
           <div className="col-span-1 md:col-span-2 space-y-4 mt-6">
             <label className="text-sm font-bold uppercase tracking-widest text-on-surface-variant flex items-center gap-2 mb-2">
-              <Calendar className="w-4 h-4 text-secondary" /> בחר מועד (תאריך ושעה)
+              <Calendar className="w-4 h-4 text-secondary-dark" /> בחר מועד (תאריך ושעה)
             </label>
             <WeeklyCalendar 
               appointments={appointments} 
