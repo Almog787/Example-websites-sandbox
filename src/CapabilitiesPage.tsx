@@ -47,6 +47,15 @@ export default function CapabilitiesPage({ onNavigate }: CapabilitiesPageProps) 
       actionText: 'נסה את ההדגמות'
     },
     {
+      id: 'live-autonomous-assistant',
+      title: 'עוזר אינטראקטיבי עצמאי (Zero-AI Chat Assistant)',
+      tag: 'חדש! פעיל במסך',
+      icon: Sparkles,
+      description: 'דמות אינטראקטיבית עם מעקב עיניים חי (Eye Tracking), שאלון הכוונה מודרך, מחשבונים אינטראקטיביים, מאגר כללי זהב וחיפוש פנימי ב-0ms ללא תלות בשרת.',
+      actionPage: 'home',
+      actionText: 'לחץ על העוזר הצף משמאל'
+    },
+    {
       id: 'live-sync',
       title: 'סנכרון תורים בזמן אמת (Real-time Live Sync)',
       tag: 'פעיל בדמו',

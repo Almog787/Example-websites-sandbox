@@ -6,6 +6,7 @@ import MinimalBooking from './MinimalBooking';
 import AdminPage from './AdminPage';
 import WeeklyCalendar from './WeeklyCalendar';
 import CapabilitiesPage from './CapabilitiesPage';
+import { AssistantWidget } from './assistant/AssistantWidget';
 import { formatDateISO } from './utils/dateUtils';
 
 export interface Appointment {
@@ -289,6 +290,9 @@ export default function App() {
           </div>
         </div>
       </footer>
+
+      {/* Interactive Autonomous Web Assistant Widget */}
+      <AssistantWidget onNavigate={navigate} />
     </div>
   );
 }
