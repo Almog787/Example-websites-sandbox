@@ -1,11 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { 
-  Search, 
-  X, 
-  ChevronLeft
-} from 'lucide-react';
-import { SearchItem, EmotionalState } from './types';
+import { Search, ChevronLeft, ArrowUpRight, Sparkles, AlertCircle } from 'lucide-react';
+import { EmotionalState } from './types';
 import { ASSISTANT_CONFIG } from './assistantConfig';
 
 interface InstantFinderProps {
@@ -20,148 +16,124 @@ export const InstantFinder: React.FC<InstantFinderProps> = ({
   onCloseWidget
 }) => {
   const [query, setQuery] = useState<string>('');
-  const inputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    // Focus search input on tab open
-    const timeout = setTimeout(() => {
-      inputRef.current?.focus();
-    }, 150);
-    return () => clearTimeout(timeout);
-  }, []);
-
-  const handleQueryChange = (val: string) => {
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
     setQuery(val);
     if (val.trim()) {
       setEmotionalState('thinking');
-      const t = setTimeout(() => setEmotionalState('idle'), 600);
+      const t = setTimeout(() => {
+        const queryNorm = val.trim().toLowerCase();
+        const matches = ASSISTANT_CONFIG.searchIndex.filter(item => {
+          const matchTitle = item.title.toLowerCase().includes(queryNorm);
+          const matchCategory = item.category.toLowerCase().includes(queryNorm);
+          const matchDesc = item.description.toLowerCase().includes(queryNorm);
+          const matchTags = item.tags.some(t => t.toLowerCase().includes(queryNorm));
+          return matchTitle || matchCategory || matchDesc || matchTags;
+        });
+
+        if (matches.length === 0) {
+          setEmotionalState('shake');
+        } else {
+          setEmotionalState('idle');
+        }
+      }, 350);
       return () => clearTimeout(t);
+    } else {
+      setEmotionalState('idle');
     }
   };
 
   const normalizedQuery = query.trim().toLowerCase();
 
-  const searchResults: SearchItem[] = !normalizedQuery
-    ? ASSISTANT_CONFIG.searchIndex.slice(0, 4) // Show top items when empty
-    : ASSISTANT_CONFIG.searchIndex.filter(item => {
+  const results = normalizedQuery
+    ? ASSISTANT_CONFIG.searchIndex.filter(item => {
         const matchTitle = item.title.toLowerCase().includes(normalizedQuery);
         const matchCategory = item.category.toLowerCase().includes(normalizedQuery);
         const matchDesc = item.description.toLowerCase().includes(normalizedQuery);
         const matchTags = item.tags.some(t => t.toLowerCase().includes(normalizedQuery));
         return matchTitle || matchCategory || matchDesc || matchTags;
-      });
-
-  const popularSuggestions = [
-    'יומן שבועי',
-    'צ\'אט בוט',
-    'מחירון',
-    'דשבורד מנהל',
-    'דירוג פייד',
-    'אוטומציות'
-  ];
+      })
+    : ASSISTANT_CONFIG.searchIndex; // Show all by default if search is empty
 
   return (
-    <div className="flex flex-col h-full gap-2.5">
-      {/* Search Input Bar */}
-      <div className="relative flex items-center">
-        <Search className="w-4 h-4 text-on-surface-variant absolute right-3 pointer-events-none" />
+    <div className="flex flex-col h-full gap-3 text-slate-100">
+      {/* Search Bar Input */}
+      <div className="relative">
         <input
-          ref={inputRef}
           type="text"
           value={query}
-          onChange={e => handleQueryChange(e.target.value)}
-          placeholder="חפש שירותים, דפי הזמנה, כלים או מחירון..."
-          className="w-full bg-surface-container-lowest border border-outline-variant/60 rounded-xl pr-9 pl-8 py-2.5 text-xs text-on-surface placeholder:text-on-surface-variant/70 outline-none focus:border-secondary focus:ring-1 focus:ring-secondary/40 transition-all shadow-inner"
+          onChange={handleSearchChange}
+          placeholder="חפש תספורת, יומן, מחירון או אדמין..."
+          className="w-full bg-slate-900 border-2 border-slate-800 focus:border-cyan-400 rounded-2xl py-2.5 pr-10 pl-4 text-xs font-bold text-white placeholder-slate-400 outline-none transition-all shadow-inner"
         />
+        <Search className="w-4 h-4 text-cyan-400 absolute right-3.5 top-1/2 -translate-y-1/2" />
         {query && (
           <button
             onClick={() => {
               setQuery('');
-              inputRef.current?.focus();
+              setEmotionalState('idle');
             }}
-            className="absolute left-2.5 p-1 text-on-surface-variant hover:text-on-surface rounded-full"
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 hover:text-white bg-slate-800 px-1.5 py-0.5 rounded-md"
           >
-            <X className="w-3.5 h-3.5" />
+            איפוס
           </button>
         )}
       </div>
 
-      {/* Suggestion Chips */}
-      {!query && (
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="text-[11px] text-on-surface-variant font-medium ml-1">חיפושים נפוצים:</span>
-          {popularSuggestions.map(s => (
-            <button
-              key={s}
-              onClick={() => handleQueryChange(s)}
-              className="text-[10px] bg-surface-container hover:bg-secondary/15 hover:text-secondary-dark text-on-surface font-semibold px-2 py-0.5 rounded-md border border-outline-variant/40 transition-colors"
-            >
-              {s}
-            </button>
-          ))}
-        </div>
-      )}
-
       {/* Results Header */}
-      <div className="flex items-center justify-between text-[11px] text-on-surface-variant px-1">
-        <span>
-          {query ? `נמצאו ${searchResults.length} תוצאות` : 'תוצאות מומלצות לניווט מהיר:'}
-        </span>
+      <div className="flex items-center justify-between text-xs text-slate-300 font-bold px-0.5">
+        <span>{normalizedQuery ? `תוצאות חיפוש (${results.length})` : 'ניווט מהיר בכל דפי האתר'}</span>
+        <span className="text-[10px] text-cyan-300 font-mono">0ms Client-Search</span>
       </div>
 
       {/* Results List */}
-      <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto pr-0.5">
-        <AnimatePresence mode="popLayout">
-          {searchResults.length > 0 ? (
-            searchResults.map(item => (
-              <motion.button
-                key={item.id}
-                layout
-                initial={{ opacity: 0, y: 6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                onClick={() => {
-                  setEmotionalState('success');
-                  onNavigate(item.targetPage);
-                  onCloseWidget();
-                }}
-                className="w-full text-right p-3 rounded-xl border border-outline-variant/50 bg-surface-container-lowest hover:bg-secondary/10 hover:border-secondary/60 transition-all flex items-center justify-between gap-3 shadow-xs group"
-              >
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <span className="text-[10px] font-bold text-secondary-dark bg-secondary/15 px-1.5 py-0.2 rounded border border-secondary/20">
-                      {item.category}
-                    </span>
-                    {item.badge && (
-                      <span className="text-[9px] font-extrabold text-amber-950 bg-amber-100 px-1.5 py-0.2 rounded border border-amber-300">
-                        {item.badge}
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="text-xs sm:text-sm font-bold text-on-surface group-hover:text-secondary-dark transition-colors">
+      <div className="flex flex-col gap-2 max-h-[340px] overflow-y-auto pr-0.5">
+        {results.length > 0 ? (
+          results.map(item => (
+            <motion.button
+              key={item.id}
+              onClick={() => {
+                onNavigate(item.targetPage);
+                setEmotionalState('success');
+                onCloseWidget();
+              }}
+              whileHover={{ scale: 1.01, x: -2 }}
+              whileTap={{ scale: 0.99 }}
+              className="w-full text-right p-3 rounded-2xl bg-slate-900/90 border border-slate-800 hover:border-cyan-400/80 transition-all flex items-center justify-between group shadow-sm"
+            >
+              <div className="flex-1 min-w-0 pr-1">
+                <div className="flex items-center gap-2 mb-0.5">
+                  <span className="text-[10px] font-black text-cyan-300 bg-cyan-500/20 px-2 py-0.5 rounded border border-cyan-400/40">
+                    {item.category}
+                  </span>
+                  <h4 className="text-xs sm:text-sm font-black text-white group-hover:text-cyan-300 transition-colors truncate">
                     {item.title}
-                  </div>
-
-                  <p className="text-[11px] text-on-surface-variant truncate mt-0.5">
-                    {item.description}
-                  </p>
+                  </h4>
                 </div>
+                <p className="text-[11px] text-slate-300 truncate font-medium">
+                  {item.description}
+                </p>
+              </div>
 
-                <div className="flex-shrink-0 flex items-center gap-1 text-xs text-secondary-dark font-bold group-hover:translate-x-[-2px] transition-transform">
-                  <span className="hidden sm:inline text-[11px]">{item.actionLabel}</span>
-                  <ChevronLeft className="w-4 h-4" />
-                </div>
-              </motion.button>
-            ))
-          ) : (
-            <div className="py-8 text-center bg-surface-container rounded-2xl border border-outline-variant/40">
-              <Search className="w-8 h-8 text-on-surface-variant/40 mx-auto mb-2" />
-              <p className="text-xs font-bold text-on-surface">לא נמצאו תוצאות עבור "{query}"</p>
-              <p className="text-[11px] text-on-surface-variant mt-1">נסה מילת מפתח אחרת כמו "תור", "זקן", או "מנהל"</p>
-            </div>
-          )}
-        </AnimatePresence>
+              <div className="w-7 h-7 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-center group-hover:border-cyan-400 transition-colors flex-shrink-0 mr-2">
+                <ChevronLeft className="w-4 h-4 text-slate-400 group-hover:text-cyan-300 transition-transform group-hover:-translate-x-1" />
+              </div>
+            </motion.button>
+          ))
+        ) : (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="text-center py-8 bg-slate-900/60 rounded-2xl border border-slate-800 p-4"
+          >
+            <AlertCircle className="w-8 h-8 text-amber-400 mx-auto mb-2" />
+            <h4 className="text-sm font-black text-white mb-1">לא נמצאו תוצאות</h4>
+            <p className="text-xs text-slate-300">
+              נסה לחפש מילים כמו "מחירון", "תורים", "זקן" או "אדמין"
+            </p>
+          </motion.div>
+        )}
       </div>
     </div>
   );

@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
-  Sparkles, 
   Copy, 
   Check, 
   ChevronLeft, 
-  Lightbulb
+  Lightbulb 
 } from 'lucide-react';
 import { TipDefinition, EmotionalState } from './types';
 import { ASSISTANT_CONFIG } from './assistantConfig';
@@ -26,46 +25,43 @@ export const GoldenCards: React.FC<GoldenCardsProps> = ({
 
   const categories = [
     { id: 'all', label: 'הכל' },
-    { id: 'hair', label: 'טיפוח שיער' },
-    { id: 'beard', label: 'עיצוב זקן' },
-    { id: 'event', label: 'הכנה לאירוע' },
-    { id: 'daily', label: 'הרגלים יומיומיים' }
+    { id: 'hair', label: 'שיער' },
+    { id: 'beard', label: 'זקן' },
+    { id: 'event', label: 'אירועים' },
+    { id: 'daily', label: 'יום-יומי' }
   ];
 
   const filteredTips = selectedCategory === 'all'
     ? ASSISTANT_CONFIG.goldenTips
-    : ASSISTANT_CONFIG.goldenTips.filter(tip => tip.category === selectedCategory);
+    : ASSISTANT_CONFIG.goldenTips.filter(t => t.category === selectedCategory);
 
-  const handleCopyTip = (tip: TipDefinition) => {
-    const textToCopy = `${tip.title}\n${tip.summary}\n${tip.goldenRule}`;
-    navigator.clipboard.writeText(textToCopy);
+  const handleCopy = (tip: TipDefinition, e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigator.clipboard.writeText(`${tip.title}: ${tip.goldenRule}`);
     setCopiedId(tip.id);
     setEmotionalState('happy');
-
-    setTimeout(() => {
-      setCopiedId(null);
-      setEmotionalState('idle');
-    }, 2000);
+    setTimeout(() => setCopiedId(null), 2000);
+    setTimeout(() => setEmotionalState('idle'), 1000);
   };
 
   return (
-    <div className="flex flex-col h-full gap-2.5">
-      {/* Category Filter Chips */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1.5 hide-scrollbar">
+    <div className="flex flex-col h-full gap-3 text-slate-100">
+      {/* Category Pills */}
+      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar text-xs">
         {categories.map(cat => {
-          const isSelected = selectedCategory === cat.id;
+          const isActive = selectedCategory === cat.id;
           return (
             <button
               key={cat.id}
               onClick={() => {
                 setSelectedCategory(cat.id);
                 setEmotionalState('thinking');
-                setTimeout(() => setEmotionalState('idle'), 600);
+                setTimeout(() => setEmotionalState('idle'), 500);
               }}
-              className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all ${
-                isSelected
-                  ? 'bg-secondary text-primary shadow-xs scale-105'
-                  : 'bg-surface-container text-on-surface-variant hover:text-on-surface hover:bg-surface-variant'
+              className={`px-3 py-1.5 rounded-full whitespace-nowrap transition-all font-bold ${
+                isActive
+                  ? 'bg-cyan-400 text-slate-950 shadow-xs font-black'
+                  : 'bg-slate-900 text-slate-300 hover:text-white hover:bg-slate-800 border border-slate-800'
               }`}
             >
               {cat.label}
@@ -74,82 +70,70 @@ export const GoldenCards: React.FC<GoldenCardsProps> = ({
         })}
       </div>
 
-      {/* Cards Scroll Container */}
+      {/* Cards List */}
       <div className="flex flex-col gap-2.5 max-h-[360px] overflow-y-auto pr-0.5">
         <AnimatePresence mode="popLayout">
-          {filteredTips.map(tip => {
-            const isCopied = copiedId === tip.id;
-            return (
-              <motion.div
-                key={tip.id}
-                layout
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95 }}
-                transition={{ duration: 0.2 }}
-                className="p-3.5 rounded-2xl border border-outline-variant/60 bg-surface-container-lowest hover:border-secondary/50 transition-all shadow-xs flex flex-col gap-2 relative group"
-              >
-                {/* Header Strip */}
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-extrabold uppercase tracking-wider text-secondary-dark bg-secondary/15 px-2 py-0.5 rounded-md border border-secondary/30">
-                    {tip.categoryLabel}
-                  </span>
+          {filteredTips.map(tip => (
+            <motion.div
+              key={tip.id}
+              layout
+              initial={{ opacity: 0, scale: 0.96 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.96 }}
+              transition={{ duration: 0.2 }}
+              className="bg-slate-900/90 border border-slate-800 hover:border-cyan-400/80 p-3.5 rounded-2xl transition-all shadow-md group relative overflow-hidden"
+            >
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-[10px] font-black text-cyan-300 bg-cyan-500/20 px-2.5 py-0.5 rounded-md border border-cyan-400/40">
+                  {tip.categoryLabel}
+                </span>
 
-                  <button
-                    onClick={() => handleCopyTip(tip)}
-                    title="העתק טיפ"
-                    className={`flex items-center gap-1 text-[11px] px-2 py-1 rounded-lg font-bold transition-all ${
-                      isCopied
-                        ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                        : 'text-on-surface-variant hover:text-secondary-dark hover:bg-surface-container'
-                    }`}
-                  >
-                    {isCopied ? (
-                      <>
-                        <Check className="w-3 h-3 text-emerald-700" />
-                        <span>הועתק!</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy className="w-3 h-3" />
-                        <span>העתק טיפ</span>
-                      </>
-                    )}
-                  </button>
-                </div>
+                <button
+                  onClick={(e) => handleCopy(tip, e)}
+                  className="flex items-center gap-1 text-[11px] font-bold text-slate-300 hover:text-cyan-300 transition-colors bg-slate-950 px-2.5 py-1 rounded-lg border border-slate-800 hover:border-cyan-400"
+                  title="העתק טיפ ללוח"
+                >
+                  {copiedId === tip.id ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-400" />
+                      <span className="text-emerald-400 font-bold">הועתק!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-3.5 h-3.5 text-cyan-400" />
+                      <span>העתק</span>
+                    </>
+                  )}
+                </button>
+              </div>
 
-                {/* Title & Summary */}
-                <div>
-                  <h4 className="text-xs sm:text-sm font-bold text-on-surface leading-snug">
-                    {tip.title}
-                  </h4>
-                  <p className="text-[11px] text-on-surface-variant leading-relaxed mt-1">
-                    {tip.summary}
-                  </p>
-                </div>
+              <h4 className="font-serif text-sm font-black text-white mb-1 flex items-center gap-1.5">
+                <Lightbulb className="w-4 h-4 text-amber-400 flex-shrink-0" />
+                <span>{tip.title}</span>
+              </h4>
 
-                {/* Highlighted Golden Rule */}
-                <div className="bg-amber-50/90 border border-amber-300/70 p-2.5 rounded-xl text-[11px] text-amber-950 font-bold leading-normal flex items-start gap-1.5">
-                  <Lightbulb className="w-3.5 h-3.5 text-amber-700 flex-shrink-0 mt-0.5" />
-                  <span>{tip.goldenRule}</span>
-                </div>
+              <p className="text-xs text-slate-300 leading-relaxed font-medium mb-1.5">
+                {tip.summary}
+              </p>
 
-                {/* Optional Deep Link Button */}
-                {tip.targetPage && (
-                  <button
-                    onClick={() => {
-                      onNavigate(tip.targetPage!);
-                      onCloseWidget();
-                    }}
-                    className="self-start text-[11px] text-secondary-dark font-bold hover:text-primary flex items-center gap-1 group/btn pt-0.5"
-                  >
-                    <span>{tip.actionLabel || 'למידע וקביעת תור'}</span>
-                    <ChevronLeft className="w-3 h-3 group-hover/btn:-translate-x-1 transition-transform" />
-                  </button>
-                )}
-              </motion.div>
-            );
-          })}
+              <div className="bg-slate-950 p-2.5 rounded-xl border border-slate-800 text-[11px] text-amber-300 font-bold mb-2.5">
+                💡 {tip.goldenRule}
+              </div>
+
+              {tip.targetPage && (
+                <button
+                  onClick={() => {
+                    onNavigate(tip.targetPage!);
+                    onCloseWidget();
+                  }}
+                  className="inline-flex items-center gap-1 text-xs font-black text-cyan-300 hover:text-cyan-200 transition-colors group/link"
+                >
+                  <span>{tip.actionLabel || 'עבור לעמוד'}</span>
+                  <ChevronLeft className="w-3.5 h-3.5 group-hover/link:-translate-x-1 transition-transform" />
+                </button>
+              )}
+            </motion.div>
+          ))}
         </AnimatePresence>
       </div>
     </div>

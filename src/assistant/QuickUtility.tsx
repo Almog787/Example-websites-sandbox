@@ -3,12 +3,13 @@ import { motion, AnimatePresence } from 'motion/react';
 import { 
   Scissors, 
   DollarSign, 
+  Percent, 
   Clock, 
   Sparkles, 
   Check, 
-  ChevronLeft, 
   CheckCircle2,
-  Calendar
+  Calendar,
+  Tag
 } from 'lucide-react';
 import { EmotionalState } from './types';
 import { ASSISTANT_CONFIG } from './assistantConfig';
@@ -32,6 +33,10 @@ export const QuickUtility: React.FC<QuickUtilityProps> = ({
 
   // Tool 2: Savings State
   const [visitsPerMonth, setVisitsPerMonth] = useState<number>(2);
+
+  // Tool 3: Quote & Discount State
+  const [basePrice, setBasePrice] = useState<number>(180);
+  const [discountPercent, setDiscountPercent] = useState<number>(15);
 
   const COMBO_ITEMS = [
     { id: 'cut', title: 'תספורת גברים פרימיום', price: 150, duration: 45 },
@@ -77,10 +82,14 @@ export const QuickUtility: React.FC<QuickUtilityProps> = ({
   const vipYearlyCost = yearlyVisits * (standardPrice * 0.8);
   const yearlySavings = regularYearlyCost - vipYearlyCost;
 
+  // Quote calculations
+  const calculatedDiscountAmount = Math.round((basePrice * discountPercent) / 100);
+  const finalDiscountedPrice = basePrice - calculatedDiscountAmount;
+
   return (
-    <div className="flex flex-col h-full gap-3">
+    <div className="flex flex-col h-full gap-3 text-slate-100">
       {/* Tool Selector Tabs */}
-      <div className="grid grid-cols-2 gap-1.5 p-1 bg-surface-container rounded-xl border border-outline-variant/40">
+      <div className="grid grid-cols-3 gap-1.5 p-1.5 bg-slate-900 rounded-xl border border-slate-800">
         {ASSISTANT_CONFIG.quickTools.map(tool => {
           const isSelected = selectedToolId === tool.id;
           return (
@@ -93,14 +102,15 @@ export const QuickUtility: React.FC<QuickUtilityProps> = ({
               }}
               className={`py-2 px-1 text-center rounded-lg text-xs font-bold transition-all flex flex-col items-center gap-1 ${
                 isSelected
-                  ? 'bg-secondary text-primary shadow-xs font-extrabold scale-[1.02]'
-                  : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-variant/40'
+                  ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-black shadow-md scale-[1.02]'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-800'
               }`}
             >
               {tool.type === 'combo' && <Scissors className="w-3.5 h-3.5" />}
               {tool.type === 'savings' && <DollarSign className="w-3.5 h-3.5" />}
-              <span className="truncate w-full text-[11px] leading-tight">
-                {tool.type === 'combo' ? 'שילוב שירותים' : 'חיסכון VIP'}
+              {tool.type === 'quote' && <Percent className="w-3.5 h-3.5" />}
+              <span className="truncate w-full text-[11px] font-extrabold leading-tight">
+                {tool.type === 'combo' ? 'שילוב' : tool.type === 'savings' ? 'חיסכון VIP' : 'הנחה'}
               </span>
             </button>
           );
@@ -117,7 +127,7 @@ export const QuickUtility: React.FC<QuickUtilityProps> = ({
             exit={{ opacity: 0, y: -10 }}
             className="flex flex-col gap-2.5"
           >
-            <div className="text-xs text-on-surface-variant">
+            <div className="text-xs text-slate-300 font-medium">
               סמן שירותים מבוקשים לקבלת משך טיפול ועלות מדויקת בזמן אמת:
             </div>
 
@@ -130,21 +140,21 @@ export const QuickUtility: React.FC<QuickUtilityProps> = ({
                     onClick={() => toggleComboService(item.id)}
                     className={`w-full flex items-center justify-between p-2.5 rounded-xl border text-xs transition-all ${
                       checked
-                        ? 'border-secondary bg-secondary/15 text-on-surface font-bold'
-                        : 'border-outline-variant/50 bg-surface-container-lowest text-on-surface hover:border-secondary/40'
+                        ? 'border-cyan-400 bg-cyan-950/60 text-white font-bold'
+                        : 'border-slate-800 bg-slate-900/90 text-slate-200 hover:border-slate-700'
                     }`}
                   >
                     <div className="flex items-center gap-2">
                       <div className={`w-4 h-4 rounded-md flex items-center justify-center border ${
-                        checked ? 'bg-secondary text-primary border-secondary' : 'border-outline-variant bg-surface'
+                        checked ? 'bg-cyan-400 text-slate-950 border-cyan-400' : 'border-slate-700 bg-slate-950'
                       }`}>
                         {checked && <Check className="w-3 h-3 stroke-[3]" />}
                       </div>
-                      <span>{item.title}</span>
+                      <span className="font-bold">{item.title}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-on-surface-variant font-mono">
-                      <span>{item.duration} דק'</span>
-                      <span className="text-secondary-dark font-bold font-sans">₪{item.price}</span>
+                    <div className="flex items-center gap-2 font-mono">
+                      <span className="text-slate-400 text-[11px]">{item.duration} דק'</span>
+                      <span className="text-amber-300 font-bold font-sans">₪{item.price}</span>
                     </div>
                   </button>
                 );
@@ -152,29 +162,29 @@ export const QuickUtility: React.FC<QuickUtilityProps> = ({
             </div>
 
             {/* Start Time Picker */}
-            <div className="flex items-center justify-between bg-surface-container p-2.5 rounded-xl border border-outline-variant/40 text-xs">
-              <label className="font-semibold text-on-surface">שעת התחלה משוערת:</label>
+            <div className="flex items-center justify-between bg-slate-900 p-2.5 rounded-xl border border-slate-800 text-xs">
+              <label className="font-bold text-slate-200">שעת התחלה משוערת:</label>
               <input
                 type="time"
                 value={comboStartTime}
                 onChange={e => setComboStartTime(e.target.value)}
-                className="bg-surface border border-outline-variant/60 rounded-lg px-2 py-1 text-xs text-on-surface font-mono outline-none focus:border-secondary"
+                className="bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-amber-300 font-mono font-bold outline-none focus:border-cyan-400"
               />
             </div>
 
             {/* Results Summary Box */}
-            <div className="bg-gradient-to-r from-amber-50 to-amber-100/60 border border-secondary/30 p-3 rounded-2xl flex items-center justify-between">
+            <div className="bg-slate-900 border-2 border-cyan-400 p-3 rounded-2xl flex items-center justify-between shadow-md">
               <div>
-                <div className="text-[11px] text-on-surface-variant">אומדן מחיר כולל</div>
-                <div className="text-xl font-bold font-serif text-secondary-dark">₪{totalComboPrice}</div>
+                <div className="text-[11px] text-slate-400 font-medium">אומדן מחיר כולל</div>
+                <div className="text-xl font-bold font-serif text-amber-300">₪{totalComboPrice}</div>
               </div>
-              <div className="text-center border-x border-secondary/20 px-3">
-                <div className="text-[11px] text-on-surface-variant">משך כולל</div>
-                <div className="text-base font-bold text-on-surface">{totalComboDuration} דקות</div>
+              <div className="text-center border-x border-slate-800 px-3">
+                <div className="text-[11px] text-slate-400 font-medium">משך כולל</div>
+                <div className="text-base font-bold text-white">{totalComboDuration} דקות</div>
               </div>
               <div className="text-left">
-                <div className="text-[11px] text-on-surface-variant">שעת סיום משוערת</div>
-                <div className="text-base font-bold font-mono text-secondary-dark">{calculateEndTime()}</div>
+                <div className="text-[11px] text-slate-400 font-medium">שעת סיום משוערת</div>
+                <div className="text-base font-bold font-mono text-cyan-300">{calculateEndTime()}</div>
               </div>
             </div>
 
@@ -183,9 +193,9 @@ export const QuickUtility: React.FC<QuickUtilityProps> = ({
                 onNavigate('book');
                 onCloseWidget();
               }}
-              className="w-full bg-secondary text-primary font-bold text-xs py-2.5 rounded-xl hover:bg-secondary-dark hover:text-white transition-all shadow-sm flex items-center justify-center gap-2"
+              className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-black text-xs py-2.5 rounded-xl hover:from-cyan-400 hover:to-blue-500 transition-all shadow-md flex items-center justify-center gap-2"
             >
-              <Calendar className="w-3.5 h-3.5" />
+              <Calendar className="w-4 h-4" />
               <span>שריון משבצת משולבת ביומן השבועי</span>
             </button>
           </motion.div>
@@ -200,14 +210,14 @@ export const QuickUtility: React.FC<QuickUtilityProps> = ({
             exit={{ opacity: 0, y: -10 }}
             className="flex flex-col gap-3"
           >
-            <div className="text-xs text-on-surface-variant">
+            <div className="text-xs text-slate-300 font-medium">
               בדוק כמה תחסוך בשנה בהצטרפות למנוי חודשי או כרטיסיית תספורות:
             </div>
 
-            <div className="bg-surface-container-lowest p-3 rounded-2xl border border-outline-variant/60">
-              <div className="flex items-center justify-between text-xs font-bold text-on-surface mb-2">
+            <div className="bg-slate-900 p-3 rounded-2xl border border-slate-800">
+              <div className="flex items-center justify-between text-xs font-bold text-slate-100 mb-2">
                 <span>תדירות ביקורים בחודש:</span>
-                <span className="bg-secondary/20 text-secondary-dark px-2 py-0.5 rounded-md font-mono text-sm">
+                <span className="bg-cyan-500/20 text-cyan-300 px-2.5 py-0.5 rounded-md font-mono text-sm border border-cyan-400/40">
                   {visitsPerMonth} {visitsPerMonth === 1 ? 'ביקור' : 'ביקורים'}
                 </span>
               </div>
@@ -221,9 +231,9 @@ export const QuickUtility: React.FC<QuickUtilityProps> = ({
                   setVisitsPerMonth(Number(e.target.value));
                   setEmotionalState('happy');
                 }}
-                className="w-full accent-secondary cursor-pointer"
+                className="w-full accent-cyan-400 cursor-pointer"
               />
-              <div className="flex justify-between text-[10px] text-on-surface-variant mt-1 font-mono">
+              <div className="flex justify-between text-[10px] text-slate-400 mt-1 font-mono font-bold">
                 <span>1 בחודש</span>
                 <span>2 בחודש</span>
                 <span>3 בחודש</span>
@@ -233,22 +243,22 @@ export const QuickUtility: React.FC<QuickUtilityProps> = ({
 
             {/* Savings Result Grid */}
             <div className="grid grid-cols-2 gap-2">
-              <div className="bg-surface-container p-3 rounded-xl border border-outline-variant/40 text-center">
-                <div className="text-[11px] text-on-surface-variant">עלות רגילה לשנה</div>
-                <div className="text-base font-bold text-on-surface-variant font-mono line-through mt-0.5">
+              <div className="bg-slate-900 p-3 rounded-xl border border-slate-800 text-center">
+                <div className="text-[11px] text-slate-400 font-medium">עלות רגילה לשנה</div>
+                <div className="text-base font-bold text-slate-400 font-mono line-through mt-0.5">
                   ₪{regularYearlyCost}
                 </div>
               </div>
-              <div className="bg-amber-100/60 p-3 rounded-xl border border-amber-300/80 text-center">
-                <div className="text-[11px] text-amber-950 font-bold">חיסכון שנתי משוער</div>
-                <div className="text-xl font-extrabold text-secondary-dark font-mono mt-0.5">
+              <div className="bg-amber-950/60 p-3 rounded-xl border border-amber-400/60 text-center">
+                <div className="text-[11px] text-amber-300 font-bold">חיסכון שנתי משוער</div>
+                <div className="text-xl font-black text-amber-300 font-mono mt-0.5">
                   ₪{yearlySavings} 🔥
                 </div>
               </div>
             </div>
 
-            <div className="bg-emerald-50 border border-emerald-300 p-2.5 rounded-xl text-[11px] text-emerald-950 flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-emerald-700 flex-shrink-0" />
+            <div className="bg-emerald-950/60 border border-emerald-400/60 p-2.5 rounded-xl text-[11px] text-emerald-200 font-bold flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
               <span>כרטיסיית VIP כוללת 20% הנחה קבועה, שטיפה חינם וקדימות בתורים.</span>
             </div>
 
@@ -257,10 +267,86 @@ export const QuickUtility: React.FC<QuickUtilityProps> = ({
                 onNavigate('capabilities');
                 onCloseWidget();
               }}
-              className="w-full bg-secondary text-primary font-bold text-xs py-2.5 rounded-xl hover:bg-secondary-dark hover:text-white transition-all shadow-sm flex items-center justify-center gap-2"
+              className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-black text-xs py-2.5 rounded-xl hover:from-cyan-400 hover:to-blue-500 transition-all shadow-md flex items-center justify-center gap-2"
             >
-              <Sparkles className="w-3.5 h-3.5" />
+              <Sparkles className="w-4 h-4" />
               <span>למד על מנויים ואוטומציות במרכז היכולות</span>
+            </button>
+          </motion.div>
+        )}
+
+        {/* Tool 3: Quote & Discount Calculator */}
+        {selectedToolId === 'tool_quote' && (
+          <motion.div
+            key="tool-quote"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="flex flex-col gap-3"
+          >
+            <div className="text-xs text-slate-300 font-medium">
+              חשב הצעת מחיר מהירה כולל אחוזי הנחה, קופוני מועדון או הטבת ביקור ראשון:
+            </div>
+
+            <div className="space-y-2.5 bg-slate-900 p-3 rounded-2xl border border-slate-800">
+              {/* Base Price input */}
+              <div className="flex items-center justify-between text-xs">
+                <label className="font-bold text-slate-200">מחיר בסיס לחבילה (₪):</label>
+                <input
+                  type="number"
+                  value={basePrice}
+                  onChange={e => {
+                    setBasePrice(Math.max(0, Number(e.target.value)));
+                    setEmotionalState('happy');
+                  }}
+                  className="w-20 bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1 text-xs text-cyan-300 font-mono font-black text-left outline-none focus:border-cyan-400"
+                />
+              </div>
+
+              {/* Discount Percentage slider */}
+              <div>
+                <div className="flex items-center justify-between text-xs font-bold text-slate-200 mb-1">
+                  <span>אחוז הנחה / קופון:</span>
+                  <span className="bg-amber-400/20 text-amber-300 px-2 py-0.5 rounded font-mono border border-amber-400/40 font-bold">
+                    {discountPercent}%
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="50"
+                  step="5"
+                  value={discountPercent}
+                  onChange={e => {
+                    setDiscountPercent(Number(e.target.value));
+                    setEmotionalState('happy');
+                  }}
+                  className="w-full accent-cyan-400 cursor-pointer"
+                />
+              </div>
+            </div>
+
+            {/* Discount Summary Card */}
+            <div className="bg-slate-900 border-2 border-cyan-400 p-3 rounded-2xl flex items-center justify-between shadow-md">
+              <div>
+                <div className="text-[11px] text-slate-400 font-medium">סכום ההנחה</div>
+                <div className="text-base font-bold text-amber-300 font-mono">-₪{calculatedDiscountAmount}</div>
+              </div>
+              <div className="text-left border-r border-slate-800 pr-3">
+                <div className="text-[11px] text-slate-300 font-bold">מחיר סופי לאחר הנחה</div>
+                <div className="text-2xl font-black text-cyan-300 font-serif">₪{finalDiscountedPrice}</div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => {
+                onNavigate('book-minimal');
+                onCloseWidget();
+              }}
+              className="w-full bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-black text-xs py-2.5 rounded-xl hover:from-cyan-400 hover:to-blue-500 transition-all shadow-md flex items-center justify-center gap-2"
+            >
+              <Tag className="w-4 h-4" />
+              <span>הזמן עכשיו במחיר המוזל ב-3 קליקים</span>
             </button>
           </motion.div>
         )}

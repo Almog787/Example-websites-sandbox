@@ -217,6 +217,14 @@ export const ASSISTANT_CONFIG: AssistantConfig = {
       iconName: 'DollarSign',
       badge: 'חיסכון כספי',
       type: 'savings'
+    },
+    {
+      id: 'tool_quote',
+      title: 'מחשבון הנחה והצעת מחיר',
+      subtitle: 'חישוב אחוזים והנחות מיוחדות',
+      iconName: 'Percent',
+      badge: 'הטבה',
+      type: 'quote'
     }
   ],
   goldenTips: [

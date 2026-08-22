@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { motion } from 'motion/react';
+import React, { useEffect, useRef, useState } from 'react';
+import * as THREE from 'three';
 import { EmotionalState } from './types';
 
 interface InteractiveAvatarProps {
@@ -15,245 +15,469 @@ export const InteractiveAvatar: React.FC<InteractiveAvatarProps> = ({
   className = '',
   isTrigger = false
 }) => {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [pupilOffset, setPupilOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-  const [isBlinking, setIsBlinking] = useState(false);
+  const mountRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [webglSupported, setWebglSupported] = useState<boolean>(true);
 
-  // Eye Tracking Logic
+  // Mouse & Animation State References
+  const mouseRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const isBlinkingRef = useRef<boolean>(false);
+  const actionStartTimeRef = useRef<number | null>(null);
+  
+  // Extended state tracking
+  const stateRef = useRef({
+    emotion: emotionalState,
+    isSleeping: false,
+    scrollVelocity: 0,
+    exitIntent: false,
+    nodding: false
+  });
+
+  // Catch emotional state changes to trigger one-shot animations
   useEffect(() => {
+    if (stateRef.current.emotion !== emotionalState) {
+      if (['happy', 'success', 'shake'].includes(emotionalState)) {
+        actionStartTimeRef.current = Date.now();
+      }
+      stateRef.current.emotion = emotionalState;
+    }
+  }, [emotionalState]);
+
+  // Global mouse tracking, Sleep Mode Timer, and Exit Intent
+  useEffect(() => {
+    let sleepTimer: NodeJS.Timeout;
+
+    const resetSleepTimer = () => {
+      stateRef.current.isSleeping = false;
+      clearTimeout(sleepTimer);
+      // 45 seconds to sleep, using 45000
+      sleepTimer = setTimeout(() => {
+        stateRef.current.isSleeping = true;
+      }, 45000);
+    };
+
     const handleMouseMove = (e: MouseEvent) => {
-      if (!containerRef.current || emotionalState === 'thinking') return;
+      resetSleepTimer();
+      stateRef.current.exitIntent = false; // Cancel panic on mouse move
+
+      if (!mountRef.current) return;
       
-      const rect = containerRef.current.getBoundingClientRect();
-      const avatarCenterX = rect.left + rect.width / 2;
-      const avatarCenterY = rect.top + rect.height / 2;
+      // CTA Tracking Simulation: If hovering over a button/link, snap gaze slightly more deliberately
+      const target = e.target as HTMLElement;
+      const isCTA = target.closest('button, a, input, [role="button"]');
 
-      const deltaX = e.clientX - avatarCenterX;
-      const deltaY = e.clientY - avatarCenterY;
-      const distance = Math.hypot(deltaX, deltaY);
+      const rect = mountRef.current.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
 
-      // Max eye travel in pixels
-      const maxOffset = 3.5;
-      if (distance === 0) {
-        setPupilOffset({ x: 0, y: 0 });
-        return;
+      // Normalized mouse delta (-1 to 1)
+      let nx = (e.clientX - centerX) / (window.innerWidth / 2);
+      let ny = (e.clientY - centerY) / (window.innerHeight / 2);
+
+      if (isCTA) {
+        nx *= 1.4; // Exaggerate gaze towards actionable items
+        ny *= 1.4;
       }
 
-      // Smooth normalized clamping
-      const factor = Math.min(distance / 300, 1);
-      const targetX = (deltaX / distance) * maxOffset * factor;
-      const targetY = (deltaY / distance) * maxOffset * factor;
+      mouseRef.current = {
+        x: Math.max(-1, Math.min(1, nx)),
+        y: Math.max(-1, Math.min(1, ny))
+      };
+    };
 
-      setPupilOffset({ x: targetX, y: targetY });
+    const handleMouseLeave = (e: MouseEvent) => {
+      if (e.clientY <= 10) { // Mouse left from the top (Exit Intent)
+        stateRef.current.exitIntent = true;
+        actionStartTimeRef.current = Date.now(); // Trigger panic animation timing
+      }
     };
 
     window.addEventListener('mousemove', handleMouseMove, { passive: true });
-    return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, [emotionalState]);
+    document.addEventListener('mouseleave', handleMouseLeave);
+    resetSleepTimer();
 
-  // Thinking state animated eye drift
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseleave', handleMouseLeave);
+      clearTimeout(sleepTimer);
+    };
+  }, []);
+
+  // Scroll Velocity (Wind effect) and Bottom Nod
   useEffect(() => {
-    if (emotionalState !== 'thinking') return;
+    let lastScrollY = window.scrollY;
+    let ticking = false;
 
-    let step = 0;
-    const interval = setInterval(() => {
-      step = (step + 1) % 4;
-      const positions = [
-        { x: 2, y: -3 },
-        { x: -2, y: -3 },
-        { x: 3, y: -1 },
-        { x: -1, y: -2 }
-      ];
-      setPupilOffset(positions[step]);
-    }, 600);
+    const handleScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const currentScrollY = window.scrollY;
+          const delta = currentScrollY - lastScrollY;
+          
+          // Smoothly update scroll velocity
+          stateRef.current.scrollVelocity = delta * 0.05; 
+          lastScrollY = currentScrollY;
 
-    return () => clearInterval(interval);
-  }, [emotionalState]);
+          // Check if reached bottom for "Nod"
+          if ((window.innerHeight + currentScrollY) >= document.body.offsetHeight - 50) {
+            if (!stateRef.current.nodding) {
+              stateRef.current.nodding = true;
+              actionStartTimeRef.current = Date.now(); // Re-use action timer for nod
+              setTimeout(() => { stateRef.current.nodding = false; }, 1000);
+            }
+          }
 
-  // Natural Blinking Timer (every 4-5.5s)
-  useEffect(() => {
-    let blinkTimeout: NodeJS.Timeout;
-    const triggerBlink = () => {
-      setIsBlinking(true);
-      setTimeout(() => setIsBlinking(false), 140);
-
-      const nextInterval = 3800 + Math.random() * 2200;
-      blinkTimeout = setTimeout(triggerBlink, nextInterval);
+          // Reset sleep timer on scroll too
+          stateRef.current.isSleeping = false;
+          ticking = false;
+        });
+        ticking = true;
+      }
     };
 
-    blinkTimeout = setTimeout(triggerBlink, 3500);
-    return () => clearTimeout(blinkTimeout);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    
+    // Decay scroll velocity over time so it returns to 0
+    const velocityDecay = setInterval(() => {
+      stateRef.current.scrollVelocity *= 0.9;
+    }, 50);
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      clearInterval(velocityDecay);
+    };
   }, []);
+
+  // Natural Random Blinking Timer
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    const triggerBlink = () => {
+      if (!stateRef.current.isSleeping) {
+        isBlinkingRef.current = true;
+        setTimeout(() => {
+          isBlinkingRef.current = false;
+        }, 150);
+      }
+      const nextInterval = 3000 + Math.random() * 3000;
+      timer = setTimeout(triggerBlink, nextInterval);
+    };
+
+    timer = setTimeout(triggerBlink, 2500);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Three.js 3D Calc-E Robot Setup
+  useEffect(() => {
+    if (!canvasRef.current) return;
+
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    let scene: THREE.Scene;
+    let camera: THREE.PerspectiveCamera;
+    let renderer: THREE.WebGLRenderer;
+
+    try {
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(45, 1, 0.1, 100);
+      camera.position.set(0, 0, 4.2);
+
+      renderer = new THREE.WebGLRenderer({
+        canvas: canvasRef.current,
+        alpha: true,
+        antialias: true,
+        powerPreference: 'high-performance'
+      });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setSize(size, size);
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    } catch {
+      setWebglSupported(false);
+      return;
+    }
+
+    // --- HIGH-CONTRAST LIGHTING SETUP ---
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.6);
+    scene.add(ambientLight);
+
+    // Cyan Key Light
+    const cyanLight = new THREE.DirectionalLight(0x00f0ff, 3.0);
+    cyanLight.position.set(3, 4, 5);
+    scene.add(cyanLight);
+
+    // Warm Gold Fill Light
+    const goldLight = new THREE.PointLight(0xf59e0b, 2.5, 10);
+    goldLight.position.set(-3, -2, 3);
+    scene.add(goldLight);
+
+    // Panic/Alert Light (Hidden by default)
+    const alertLight = new THREE.PointLight(0xff0000, 0, 10);
+    alertLight.position.set(0, 0, 4);
+    scene.add(alertLight);
+
+    // --- CALC-E 3D ROBOT HEAD MESHES ---
+    const rootGroup = new THREE.Group();
+    scene.add(rootGroup);
+
+    const headGroup = new THREE.Group();
+    rootGroup.add(headGroup);
+
+    // 1. Central Head Base
+    const headGeo = new THREE.SphereGeometry(1.0, 32, 32);
+    const headMat = new THREE.MeshStandardMaterial({
+      color: 0x0284c7,
+      metalness: 0.7,
+      roughness: 0.15,
+      emissive: 0x0369a1,
+      emissiveIntensity: 0.35
+    });
+    const headMesh = new THREE.Mesh(headGeo, headMat);
+    headGroup.add(headMesh);
+
+    // 2. Glass Sheen Outer Helmet
+    const helmetGeo = new THREE.SphereGeometry(1.15, 32, 32);
+    const helmetMat = new THREE.MeshPhysicalMaterial({
+      color: 0x38bdf8,
+      transparent: true,
+      opacity: 0.28,
+      roughness: 0.05,
+      metalness: 0.2,
+      transmission: 0.7,
+      ior: 1.3
+    });
+    const helmetMesh = new THREE.Mesh(helmetGeo, helmetMat);
+    headGroup.add(helmetMesh);
+
+    // 3. Dark Visor Screen
+    const visorGeo = new THREE.SphereGeometry(0.88, 32, 32, 0, Math.PI * 2, 0, Math.PI * 0.55);
+    const visorMat = new THREE.MeshStandardMaterial({
+      color: 0x090d16,
+      metalness: 0.9,
+      roughness: 0.05,
+      emissive: 0x0284c7,
+      emissiveIntensity: 0.25
+    });
+    const visorMesh = new THREE.Mesh(visorGeo, visorMat);
+    visorMesh.rotation.x = Math.PI / 2;
+    visorMesh.position.set(0, 0, 0.18);
+    headGroup.add(visorMesh);
+
+    // 4. Glowing Gold Neck Ring
+    const neckGeo = new THREE.TorusGeometry(0.72, 0.08, 16, 32);
+    const goldMat = new THREE.MeshStandardMaterial({
+      color: 0xf59e0b,
+      metalness: 0.9,
+      roughness: 0.1,
+      emissive: 0xd97706,
+      emissiveIntensity: 0.3
+    });
+    const neckMesh = new THREE.Mesh(neckGeo, goldMat);
+    neckMesh.rotation.x = Math.PI / 2;
+    neckMesh.position.set(0, -0.98, 0);
+    headGroup.add(neckMesh);
+
+    // 5. Antenna
+    const antennaStemGeo = new THREE.CylinderGeometry(0.04, 0.04, 0.4, 16);
+    const antennaStem = new THREE.Mesh(antennaStemGeo, goldMat);
+    antennaStem.position.set(0, 1.15, 0);
+    headGroup.add(antennaStem);
+
+    const bulbGeo = new THREE.SphereGeometry(0.14, 16, 16);
+    const bulbMat = new THREE.MeshStandardMaterial({
+      color: 0xff007a,
+      emissive: 0xff007a,
+      emissiveIntensity: 2.0,
+      roughness: 0.1
+    });
+    const antennaBulb = new THREE.Mesh(bulbGeo, bulbMat);
+    antennaBulb.position.set(0, 1.38, 0);
+    headGroup.add(antennaBulb);
+
+    // 6. Eyes Group
+    const eyesGroup = new THREE.Group();
+    eyesGroup.position.set(0, 0.1, 0.82);
+    headGroup.add(eyesGroup);
+
+    const scleraMat = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.1 });
+    const pupilMat = new THREE.MeshStandardMaterial({
+      color: 0x00f0ff,
+      emissive: 0x06b6d4,
+      emissiveIntensity: 2.2,
+      roughness: 0.05
+    });
+    const catchlightMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+
+    const createEye = (xPos: number) => {
+      const eyeGroup = new THREE.Group();
+      eyeGroup.position.set(xPos, 0, 0);
+      
+      const sclera = new THREE.Mesh(new THREE.SphereGeometry(0.22, 24, 24), scleraMat);
+      eyeGroup.add(sclera);
+      
+      const pupil = new THREE.Mesh(new THREE.SphereGeometry(0.13, 20, 20), pupilMat);
+      pupil.position.set(0, 0, 0.1);
+      eyeGroup.add(pupil);
+      
+      const catchlight = new THREE.Mesh(new THREE.SphereGeometry(0.04, 12, 12), catchlightMat);
+      catchlight.position.set(-0.04, 0.04, 0.2);
+      eyeGroup.add(catchlight);
+      
+      return { group: eyeGroup, pupil };
+    };
+
+    const leftEye = createEye(-0.35);
+    const rightEye = createEye(0.35);
+    eyesGroup.add(leftEye.group);
+    eyesGroup.add(rightEye.group);
+
+    // --- ANIMATION LOOP ---
+    let animationFrameId: number;
+    let clock = new THREE.Clock();
+
+    const animate = () => {
+      animationFrameId = requestAnimationFrame(animate);
+      const elapsedTime = clock.getElapsedTime();
+      const current = stateRef.current;
+
+      // 1. Floating (Idle vs Sleep)
+      if (!prefersReducedMotion) {
+        if (current.isSleeping) {
+          // Slow, deep breathing
+          headGroup.position.y = Math.sin(elapsedTime * 0.8) * 0.12 - 0.05;
+        } else {
+          // Normal idle
+          headGroup.position.y = Math.sin(elapsedTime * 2.2) * 0.08;
+        }
+      }
+
+      // 2. Head Tracking & Wind Velocity
+      let targetRotY = mouseRef.current.x * 0.35;
+      let targetRotX = -mouseRef.current.y * 0.28;
+
+      // Wind effect: tilt head backward when scrolling down fast
+      if (current.scrollVelocity > 0.1) {
+        targetRotX -= Math.min(current.scrollVelocity * 0.2, 0.5);
+      } else if (current.scrollVelocity < -0.1) {
+        targetRotX += Math.min(Math.abs(current.scrollVelocity) * 0.2, 0.5);
+      }
+
+      if (current.isSleeping) {
+        targetRotY = 0; // Look forward when asleep
+        targetRotX = -0.1; // Head slightly tilted down
+      }
+
+      headGroup.rotation.y += (targetRotY - headGroup.rotation.y) * 0.08;
+      headGroup.rotation.x += (targetRotX - headGroup.rotation.x) * 0.08;
+
+      // Pupil Lerp
+      const pupilX = current.isSleeping ? 0 : mouseRef.current.x * 0.06;
+      const pupilY = current.isSleeping ? 0 : -mouseRef.current.y * 0.05;
+      
+      leftEye.pupil.position.x += (pupilX - leftEye.pupil.position.x) * 0.12;
+      leftEye.pupil.position.y += (pupilY - leftEye.pupil.position.y) * 0.12;
+      rightEye.pupil.position.x += (pupilX - rightEye.pupil.position.x) * 0.12;
+      rightEye.pupil.position.y += (pupilY - rightEye.pupil.position.y) * 0.12;
+
+      // 3. Eye Blinking / Sleep Squint
+      let targetScaleY = 1.0;
+      if (current.isSleeping) {
+        targetScaleY = 0.05; // Closed eyes
+      } else if (isBlinkingRef.current) {
+        targetScaleY = 0.08; // Blink
+      } else if (current.exitIntent) {
+        targetScaleY = 1.3; // Wide eyes panic
+      }
+      eyesGroup.scale.y += (targetScaleY - eyesGroup.scale.y) * (current.isSleeping ? 0.05 : 0.3);
+
+      // 4. One-Shot & Special Animations
+      if (current.exitIntent) {
+        // Panic mode! Rapid shake and red light
+        headGroup.rotation.z = Math.sin(elapsedTime * 25) * 0.05;
+        alertLight.intensity = (Math.sin(elapsedTime * 10) + 1) * 2; // Pulsing red
+        bulbMat.color.setHex(0xff0000);
+        bulbMat.emissive.setHex(0xff0000);
+      } else {
+        alertLight.intensity = 0;
+        bulbMat.color.setHex(0xff007a);
+        bulbMat.emissive.setHex(0xff007a);
+
+        if (current.nodding && actionStartTimeRef.current !== null) {
+          // Bottom nod
+          const delta = (Date.now() - actionStartTimeRef.current) / 1000;
+          if (delta <= 0.6) {
+            headGroup.rotation.x += Math.sin(delta * Math.PI * 3) * 0.15;
+          }
+        } else if (actionStartTimeRef.current !== null) {
+          const delta = (Date.now() - actionStartTimeRef.current) / 1000;
+
+          if (current.emotion === 'happy' || current.emotion === 'success') {
+            const duration = 0.6;
+            if (delta <= duration && !prefersReducedMotion) {
+              const progress = delta / duration;
+              headGroup.position.y += Math.sin(progress * Math.PI) * 0.45;
+              headGroup.rotation.y += progress * Math.PI * 2; // Spin
+            } else {
+              actionStartTimeRef.current = null;
+            }
+          } else if (current.emotion === 'shake') {
+            const duration = 0.5;
+            if (delta <= duration && !prefersReducedMotion) {
+              const progress = delta / duration;
+              headGroup.rotation.z = Math.sin(progress * Math.PI * 6) * 0.25;
+            } else {
+              actionStartTimeRef.current = null;
+              headGroup.rotation.z = 0;
+            }
+          }
+        }
+
+        // Continuous Thinking Wiggle
+        if (current.emotion === 'thinking' && actionStartTimeRef.current === null) {
+          headGroup.rotation.z = Math.sin(elapsedTime * 9) * 0.12;
+        } else if (actionStartTimeRef.current === null && current.emotion !== 'shake' && !current.exitIntent) {
+          headGroup.rotation.z += (0 - headGroup.rotation.z) * 0.1;
+        }
+      }
+
+      // Pulse antenna bulb
+      antennaBulb.scale.setScalar(1.0 + Math.sin(elapsedTime * 4) * (current.exitIntent ? 0.3 : 0.15));
+
+      renderer.render(scene, camera);
+    };
+
+    animate();
+
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+      renderer.dispose();
+      headGeo.dispose(); headMat.dispose(); helmetGeo.dispose(); helmetMat.dispose();
+      visorGeo.dispose(); visorMat.dispose(); neckGeo.dispose(); goldMat.dispose();
+      antennaStemGeo.dispose(); bulbGeo.dispose(); bulbMat.dispose();
+      scleraMat.dispose(); pupilMat.dispose(); catchlightMat.dispose();
+    };
+  }, [size]);
 
   return (
     <div
-      ref={containerRef}
+      ref={mountRef}
       className={`relative inline-flex items-center justify-center select-none ${className}`}
       style={{ width: size, height: size }}
     >
-      <motion.svg
-        width={size}
-        height={size}
-        viewBox="0 0 100 100"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        animate={
-          emotionalState === 'happy' || emotionalState === 'success'
-            ? { y: [0, -3, 0], scale: [1, 1.05, 1] }
-            : emotionalState === 'thinking'
-            ? { rotate: [-2, 2, -2] }
-            : { y: [0, -1, 0] }
-        }
-        transition={{
-          repeat: Infinity,
-          duration: emotionalState === 'happy' || emotionalState === 'success' ? 1.4 : 3,
-          ease: 'easeInOut'
-        }}
-      >
-        <defs>
-          {/* Luxury Metallic Gold Gradients */}
-          <linearGradient id="goldHeadGrad" x1="10" y1="10" x2="90" y2="90" gradientUnits="userSpaceOnUse">
-            <stop stopColor="#1E1C18" />
-            <stop offset="0.5" stopColor="#121212" />
-            <stop offset="1" stopColor="#2A261F" />
-          </linearGradient>
-
-          <linearGradient id="goldRimGrad" x1="0" y1="0" x2="100" y2="100" gradientUnits="userSpaceOnUse">
-            <stop stopColor="#F6E27A" />
-            <stop offset="0.4" stopColor="#C59B27" />
-            <stop offset="0.8" stopColor="#9A7B1C" />
-            <stop offset="1" stopColor="#E2BA4B" />
-          </linearGradient>
-
-          <linearGradient id="faceScreenGrad" x1="20" y1="20" x2="80" y2="80" gradientUnits="userSpaceOnUse">
-            <stop stopColor="#18181B" />
-            <stop offset="1" stopColor="#09090B" />
-          </linearGradient>
-
-          <filter id="goldGlow" x="-20%" y="-20%" width="140%" height="140%">
-            <feGaussianBlur stdDeviation="3" result="blur" />
-            <feComposite in="SourceGraphic" in2="blur" operator="over" />
-          </filter>
-
-          <filter id="eyeGlow" x="-30%" y="-30%" width="160%" height="160%">
-            <feGaussianBlur stdDeviation="1.5" result="blur" />
-            <feComposite in="SourceGraphic" in2="blur" operator="over" />
-          </filter>
-        </defs>
-
-        {/* Outer Halo Glow when Trigger */}
-        {isTrigger && (
-          <circle
-            cx="50"
-            cy="50"
-            r="46"
-            stroke="url(#goldRimGrad)"
-            strokeWidth="1.5"
-            strokeDasharray="4 4"
-            opacity="0.6"
-            className="animate-spin"
-            style={{ transformOrigin: '50% 50%', animationDuration: '24s' }}
-          />
-        )}
-
-        {/* Bot Outer Head Shell */}
-        <rect
-          x="12"
-          y="14"
-          width="76"
-          height="72"
-          rx="26"
-          fill="url(#goldHeadGrad)"
-          stroke="url(#goldRimGrad)"
-          strokeWidth="3.5"
-          filter="url(#goldGlow)"
+      {webglSupported ? (
+        <canvas
+          ref={canvasRef}
+          width={size}
+          height={size}
+          className="w-full h-full object-contain pointer-events-none drop-shadow-[0_4px_20px_rgba(6,182,212,0.6)]"
         />
+      ) : (
+        <div className="w-full h-full rounded-full bg-cyan-950 border-2 border-cyan-400 flex items-center justify-center text-cyan-300 font-bold text-xs">
+          🤖
+        </div>
+      )}
 
-        {/* Mini Crown / Golden Top Antenna */}
-        <path
-          d="M44 14 L50 6 L56 14"
-          stroke="url(#goldRimGrad)"
-          strokeWidth="3"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        <circle cx="50" cy="6" r="3.5" fill="#F6E27A" />
-
-        {/* High-Tech Dark Visor / Face Screen */}
-        <rect
-          x="20"
-          y="24"
-          width="60"
-          height="52"
-          rx="18"
-          fill="url(#faceScreenGrad)"
-          stroke="#3F3F46"
-          strokeWidth="1.5"
-        />
-
-        {/* Eye Socket Left & Right / Expressive Shapes */}
-        {emotionalState === 'happy' || emotionalState === 'success' ? (
-          // Happy Joyful Arcs (^ ^)
-          <g stroke="#F6E27A" strokeWidth="4" strokeLinecap="round" filter="url(#eyeGlow)">
-            <path d="M29 48 Q 36 38, 43 48" fill="none" />
-            <path d="M57 48 Q 64 38, 71 48" fill="none" />
-          </g>
-        ) : (
-          // Dynamic Eyes with Eye-Tracking & Blinking
-          <g
-            style={{
-              transformOrigin: '50% 45%',
-              transform: isBlinking ? 'scaleY(0.1)' : 'scaleY(1)',
-              transition: 'transform 0.12s cubic-bezier(0.4, 0, 0.2, 1)'
-            }}
-          >
-            {/* Left Eye Sclera / Background */}
-            <circle cx="36" cy="45" r="9.5" fill="#27272A" stroke="#C59B27" strokeWidth="1" />
-            {/* Left Eye Pupil */}
-            <g transform={`translate(${pupilOffset.x}, ${pupilOffset.y})`}>
-              <circle cx="36" cy="45" r="6" fill="#F6E27A" filter="url(#eyeGlow)" />
-              <circle cx="34.5" cy="43.5" r="2" fill="#FFFFFF" />
-            </g>
-
-            {/* Right Eye Sclera / Background */}
-            <circle cx="64" cy="45" r="9.5" fill="#27272A" stroke="#C59B27" strokeWidth="1" />
-            {/* Right Eye Pupil */}
-            <g transform={`translate(${pupilOffset.x}, ${pupilOffset.y})`}>
-              <circle cx="64" cy="45" r="6" fill="#F6E27A" filter="url(#eyeGlow)" />
-              <circle cx="62.5" cy="43.5" r="2" fill="#FFFFFF" />
-            </g>
-          </g>
-        )}
-
-        {/* Mouth / Emotional Smile Arc */}
-        {emotionalState === 'happy' || emotionalState === 'success' ? (
-          <path
-            d="M38 61 Q 50 71, 62 61"
-            fill="none"
-            stroke="#F6E27A"
-            strokeWidth="3.5"
-            strokeLinecap="round"
-          />
-        ) : emotionalState === 'thinking' ? (
-          <ellipse cx="50" cy="62" rx="3.5" ry="3.5" fill="#E2BA4B" />
-        ) : (
-          <path
-            d="M42 62 Q 50 67, 58 62"
-            fill="none"
-            stroke="#C59B27"
-            strokeWidth="2.5"
-            strokeLinecap="round"
-          />
-        )}
-
-        {/* Rosy Cheeks when Happy */}
-        {(emotionalState === 'happy' || emotionalState === 'success') && (
-          <>
-            <circle cx="26" cy="54" r="3.5" fill="#F59E0B" opacity="0.6" />
-            <circle cx="74" cy="54" r="3.5" fill="#F59E0B" opacity="0.6" />
-          </>
-        )}
-      </motion.svg>
+      {isTrigger && (
+        <span className="absolute inset-0 rounded-full border-2 border-cyan-400 animate-ping opacity-35 pointer-events-none" />
+      )}
     </div>
   );
 };

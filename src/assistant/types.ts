@@ -1,4 +1,4 @@
-export type EmotionalState = 'idle' | 'happy' | 'thinking' | 'success';
+export type EmotionalState = 'idle' | 'happy' | 'thinking' | 'success' | 'shake' | 'sleep' | 'panic';
 
 export type AssistantTab = 'quiz' | 'tools' | 'tips' | 'search';
 
@@ -36,7 +36,7 @@ export interface QuickToolDefinition {
   subtitle: string;
   iconName: string;
   badge?: string;
-  type: 'combo' | 'savings';
+  type: 'combo' | 'savings' | 'quote';
 }
 
 export interface TipDefinition {
